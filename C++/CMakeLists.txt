@@ -4,9 +4,15 @@ cmake_minimum_required(VERSION 3.1)
 
 # PROJECT CONFIGURATION
 project(SESync LANGUAGES C CXX VERSION 1.0.0)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # We require C++ 14
+set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHa")
+endif()
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Set build type to 'RelWithDebInfo' if one was not specified by the user
 if(NOT CMAKE_BUILD_TYPE)
@@ -32,9 +38,6 @@ set(ENABLE_PROFILING OFF CACHE BOOL "Enable code profiling using gperftools")
 # Enable visualization module.
 set(ENABLE_VISUALIZATION OFF CACHE BOOL "Enable visualization module.")
 
-# Add the .cmake files that ship with Eigen3 to the CMake module path (useful for finding other stuff)
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/cmake" CACHE STRING "The CMake module path used for this project")
-
 if(${ENABLE_VECTORIZATION})
 message(STATUS "Enabling SIMD/AVX instruction sets")
 add_definitions(-march=native)
@@ -55,13 +58,17 @@ message(STATUS "")
 # SESYNC DEPENDENCIES
 
 # FIND EIGEN3
+find_package(Eigen3 CONFIG REQUIRED)
+if (NOT TARGET Eigen3::Eigen)
 set(EIGEN3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Eigen)
 message(STATUS "Eigen3 include directory: ${EIGEN3_INCLUDE_DIR}\n")
+endif()
 
 
 # FIND ADDITIONAL LIBRARIES
 # These next operations make use of the .cmake files shipped with Eigen3
-find_package(SPQR REQUIRED)
+find_package(metis CONFIG REQUIRED)
+find_package(suitesparse CONFIG REQUIRED)
 find_package(Cholmod REQUIRED)
 find_package(BLAS REQUIRED)
 
@@ -73,18 +80,25 @@ set(OPTIMIZATION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Optimization/ CACHE PATH "Path 
 add_subdirectory(${OPTIMIZATION_DIR})
 
 # PERFORMANCE IMPROVEMENTS
+# Enable OpenMP (if available)
 if(${ENABLE_OPENMP})
 find_package(OpenMP)
-if(OPENMP_FOUND)
-message(STATUS "Found OpenMP! Turning on support for parallelization\n")
-endif()
+	if(OPENMP_FOUND)
+	message(STATUS "Found OpenMP! Turning on support for parallelization\n")
+	# Append OpenMP compilation and linker flags to all executables
+	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+	endif()
 endif()
 
-
+find_package(spectra CONFIG REQUIRED)
+if (NOT TARGET Spectra::Spectra)
 # FIND SPECTRA
 # Spectra doesn't ship with a .cmake file, but it's header-only, so it suffices to simply determine it's top-level directory
 set(SPECTRA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Spectra/include CACHE PATH "Path to top-level directory of Spectra template library")
 message(STATUS "Spectra include directory: ${SPECTRA_INCLUDE_DIR}\n")
+else()
+set(Spectra_LIBRARIES Spectra::Spectra)
+endif()
 
 set(SESync_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SE-Sync/include)
 set(SESync_HDR_DIR ${SESync_INCLUDE_DIR}/SESync)
@@ -119,10 +133,10 @@ ${SESync_SOURCE_DIR}/SESync.cpp
 
 
 # Build the SE-Sync library
-add_library(${PROJECT_NAME} SHARED ${SESync_HDRS} ${SESync_SRCS})
+add_library(${PROJECT_NAME} ${SESync_HDRS} ${SESync_SRCS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SESync_PRIVATE_INCLUDES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${SESync_INCLUDES})
-target_link_libraries(${PROJECT_NAME} Optimization ${BLAS_LIBRARIES} ${CHOLMOD_LIBRARIES} ${SPQR_LIBRARIES} ${M} ${LAPACK})
+target_link_libraries(${PROJECT_NAME} Optimization ${BLAS_LIBRARIES} ${CHOLMOD_LIBRARIES} ${SuiteSparse_LIBRARIES} ${SPQR_LIBRARIES} ${M} ${LAPACK} ${Spectra_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 
 if(OPENMP_FOUND)
 # Add additional compilation flags to enable OpenMP support

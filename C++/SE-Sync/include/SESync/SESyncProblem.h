@@ -373,7 +373,7 @@ public:
     int cols() const { return cols_; }
 
     // Matrix-vector multiplication operation
-    void perform_op(Scalar *x, Scalar *y) const;
+    void perform_op(const Scalar* x, Scalar* y) const;
   };
 };
 } // namespace SESync

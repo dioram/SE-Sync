@@ -516,9 +516,9 @@ SESyncProblem::SMinusLambdaProdFunctor::SMinusLambdaProdFunctor(
   Lambda_blocks_ = problem_->compute_Lambda_blocks(Y);
 }
 
-void SESyncProblem::SMinusLambdaProdFunctor::perform_op(Scalar *x,
+void SESyncProblem::SMinusLambdaProdFunctor::perform_op(const Scalar *x,
                                                         Scalar *y) const {
-  Eigen::Map<Vector> X(x, cols_);
+  Eigen::Map<Vector> X((Scalar*)x, cols_); // we do not modify X, but there is no ctor with const pointer
   Eigen::Map<Vector> Y(y, rows_);
 
   Y = problem_->data_matrix_product(X);

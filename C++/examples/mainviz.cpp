@@ -1,4 +1,4 @@
-#include <experimental/filesystem>
+#include <filesystem>
 #include <iostream>
 
 #include "SESync/SESync.h"
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   vopts.img_name = "custom-img-name";
   vopts.img_dir =
       "sesync-iters-" +
-      std::string(std::experimental::filesystem::path(argv[1]).filename());
+      std::string(std::filesystem::path(argv[1]).filename());
 
   // Run SE-Sync, and launch the visualization magic.
   SESyncVisualizer viz(num_poses, measurements, opts, vopts);
