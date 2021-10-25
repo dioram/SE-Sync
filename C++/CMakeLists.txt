@@ -162,22 +162,29 @@ endif()
 # BUILD EXAMPLE DRIVER
 add_subdirectory(examples)
 
+###############################################################################################
+# install
+###############################################################################################
 
-# EXPORT SE-SYNC LIBRARY
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  "${PROJECT_SOURCE_DIR}/CMake/SE-Sync-config.cmake.in"
+  "${PROJECT_BINARY_DIR}/SE-Sync-config.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/SE-Sync
+)
 
-# Add add entry for this project into CMake's package registry, so that this project can be found by other CMake projects
-export(PACKAGE ${PROJECT_NAME})
-# Create a configuration file for this project, so that it can be imported by other CMake projects
-export(TARGETS ${PROJECT_NAME} Optimization FILE ${PROJECT_NAME}Config.cmake)
+install(FILES
+    "${PROJECT_BINARY_DIR}/SE-Sync-config.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/SE-Sync)
 
+install(DIRECTORY SE-Sync/include
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
-# EXPORT SE-SYNC VISUALIZATION LIBRARY
-
-if(${ENABLE_VISUALIZATION})
-# Add add entry for this project into CMake's package registry, so that this
-# project can be found by other CMake projects
-export(PACKAGE SESyncViz)
-# Create a configuration file for this project, so that it can be imported by
-# other CMake projects
-export(TARGETS SESyncViz FILE SESyncVizConfig.cmake)
-endif()
+install(TARGETS ${PROJECT_NAME} ${EXTRA_TARGETS}
+    EXPORT SE-Sync-export
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

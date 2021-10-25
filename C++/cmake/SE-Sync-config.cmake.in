@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(Eigen3 CONFIG REQUIRED)
+find_dependency(metis CONFIG REQUIRED)
+find_dependency(suitesparse CONFIG REQUIRED)
+find_dependency(Cholmod REQUIRED)
+find_dependency(BLAS REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/SE-SyncTargets.cmake")
+check_required_components("SE-Sync")
