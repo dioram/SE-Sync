@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_package(CHOLMOD QUIET)
+if(NOT CHOLMOD_FOUND)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+find_dependency(CHOLMOD)
+endif()
+
+find_dependency(Eigen3 CONFIG REQUIRED)
+find_dependency(metis CONFIG REQUIRED)
+find_dependency(suitesparse CONFIG REQUIRED)
+find_dependency(BLAS REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/SESyncTargets.cmake")
+check_required_components("SESync")

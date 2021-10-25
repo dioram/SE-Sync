@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # We require C++ 14
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(GNUInstallDirs)
+
 if (MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHa")
 endif()
@@ -134,8 +136,15 @@ ${SESync_SOURCE_DIR}/SESync.cpp
 
 # Build the SE-Sync library
 add_library(${PROJECT_NAME} ${SESync_HDRS} ${SESync_SRCS})
-target_include_directories(${PROJECT_NAME} PRIVATE ${SESync_PRIVATE_INCLUDES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${SESync_INCLUDES})
+
+target_include_directories(${PROJECT_NAME}
+  PRIVATE 
+    $<BUILD_INTERFACE:${SESync_PRIVATE_INCLUDES}>
+  PUBLIC 
+    $<BUILD_INTERFACE:${SESync_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
 target_link_libraries(${PROJECT_NAME} Optimization ${BLAS_LIBRARIES} ${CHOLMOD_LIBRARIES} ${SuiteSparse_LIBRARIES} ${SPQR_LIBRARIES} ${M} ${LAPACK} ${Spectra_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
 
 if(OPENMP_FOUND)
@@ -157,8 +166,6 @@ if(${ENABLE_VISUALIZATION})
   target_link_libraries(SESyncViz ${PROJECT_NAME} ${Pangolin_LIBRARIES})
 endif()
 
-
-
 # BUILD EXAMPLE DRIVER
 add_subdirectory(examples)
 
@@ -166,25 +173,37 @@ add_subdirectory(examples)
 # install
 ###############################################################################################
 
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
-  "${PROJECT_SOURCE_DIR}/CMake/SE-Sync-config.cmake.in"
-  "${PROJECT_BINARY_DIR}/SE-Sync-config.cmake"
-  INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/SE-Sync
+  "${PROJECT_SOURCE_DIR}/CMake/${PROJECT_NAME}-config.cmake.in"
+  "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+  INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
 )
 
 install(FILES
-    "${PROJECT_BINARY_DIR}/SE-Sync-config.cmake"
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/SE-Sync)
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
 
-install(DIRECTORY SE-Sync/include
+install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindCholmod.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SE-Sync/include
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install(TARGETS ${PROJECT_NAME} ${EXTRA_TARGETS}
-    EXPORT SE-Sync-export
+    EXPORT ${PROJECT_NAME}-export
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(EXPORT ${PROJECT_NAME}-export
+  FILE
+    ${PROJECT_NAME}Targets.cmake
+  NAMESPACE
+  ${PROJECT_NAME}::
+  DESTINATION
+    ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
 )
